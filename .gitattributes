@@ -1,0 +1,23 @@
+# 统一用 LF 入库，避免 Windows 上 checkout 后整仓变成 CRLF、产生无意义的 diff
+* text=auto eol=lf
+
+# 二进制文件不要做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp3 binary
+*.m4a binary
+*.wav binary
+*.flac binary
+*.ogg binary
+*.zip binary
+
+# GitHub 语言统计：把 HTML/CSS 归到前端、Python 归到后端，剩下的当文档
+*.html linguist-detectable=true
+*.css  linguist-detectable=true
+*.py   linguist-detectable=true
+*.md   linguist-documentation
+docs/img/* linguist-documentation

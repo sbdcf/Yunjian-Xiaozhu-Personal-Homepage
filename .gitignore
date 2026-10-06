@@ -1,0 +1,28 @@
+# 只忽略"绝不该进仓库"的东西。
+# 站点内容（site.json、uploads/）默认一起提交 —— 换机器或重新部署时内容才不会丢。
+# 注意：.gitignore 不支持行内注释，注释必须单独占一行。
+
+# 后台密码哈希与会话密钥，绝不要提交
+admin.json
+
+# 本地自测截图（约 25 MB，需要时本地重跑即可生成）
+preview/*.png
+preview/_login.png
+
+# 如果 uploads/ 体积过大（无损音乐、高清大图），
+# 取消下面两行注释，改为单独备份这个目录
+# uploads/
+# !uploads/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

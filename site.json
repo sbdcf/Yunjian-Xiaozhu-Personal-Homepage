@@ -1,0 +1,133 @@
+{
+  "site": {
+    "name": "蛋吵翻的妙妙屋"
+  },
+  "author": {
+    "name": "蛋吵翻",
+    "initials": "YN",
+    "role": "WishCoding享受者",
+    "intro": "",
+    "status": "正在享受Wishcoding",
+    "avatar": ""
+  },
+  "social": [
+    {
+      "label": "GitHub",
+      "href": "https://github.com/",
+      "icon": "github"
+    },
+    {
+      "label": "邮箱",
+      "href": "mailto:hi@example.com",
+      "icon": "mail"
+    },
+    {
+      "label": "RSS",
+      "href": "/feed.xml",
+      "icon": "rss"
+    }
+  ],
+  "nav": [
+    {
+      "label": "博客",
+      "caption": "文章与笔记",
+      "href": "/blog/",
+      "icon": "pen"
+    },
+    {
+      "label": "项目",
+      "caption": "作品与实验",
+      "href": "/projects/",
+      "icon": "cube"
+    },
+    {
+      "label": "相册",
+      "caption": "光与影",
+      "href": "/photos/",
+      "icon": "camera"
+    },
+    {
+      "label": "关于",
+      "caption": "我是谁",
+      "href": "/about/",
+      "icon": "user"
+    },
+    {
+      "label": "归档",
+      "caption": "时间线",
+      "href": "/archive/",
+      "icon": "clock"
+    },
+    {
+      "label": "联系",
+      "caption": "说点什么",
+      "href": "/contact/",
+      "icon": "send"
+    }
+  ],
+  "footer": {
+    "copyright": "© 2025 你的名字",
+    "links": [
+      {
+        "label": "站点地图",
+        "href": "/sitemap.xml"
+      },
+      {
+        "label": "关于",
+        "href": "/about/"
+      },
+      {
+        "label": "RSS",
+        "href": "/feed.xml"
+      }
+    ],
+    "icp": {
+      "text": "",
+      "href": "https://beian.miit.gov.cn/"
+    },
+    "police": {
+      "text": "",
+      "href": ""
+    }
+  },
+  "background": {
+    "mode": "auto",
+    "manualScene": "day",
+    "smooth": 1200,
+    "animate": true,
+    "schedule": [
+      {
+        "from": 5,
+        "to": 8,
+        "scene": "dawn"
+      },
+      {
+        "from": 8,
+        "to": 17,
+        "scene": "day"
+      },
+      {
+        "from": 17,
+        "to": 20,
+        "scene": "dusk"
+      },
+      {
+        "from": 20,
+        "to": 29,
+        "scene": "night"
+      }
+    ],
+    "photos": []
+  },
+  "timeline": {
+    "feeds": [],
+    "limit": 8
+  },
+  "music": {
+    "enabled": false,
+    "autoplay": false,
+    "volume": 0.5,
+    "neteaseApiBase": "",
+    "tracks": []
+  }
+}

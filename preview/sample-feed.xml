@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>示例博客</title>
+    <link>https://example.com/</link>
+    <description>用于本地联调时间轴抓取的示例 RSS</description>
+    <item>
+      <title>把首页拆成三屏之后，我删掉了 60% 的文字</title>
+      <link>https://example.com/posts/three-screens</link>
+      <pubDate>Wed, 08 Oct 2025 09:12:00 GMT</pubDate>
+      <description><![CDATA[<p>文字密度是设计问题，不是内容问题。</p>]]></description>
+    </item>
+    <item>
+      <title>用 Canvas 画一整天的天空</title>
+      <link>https://example.com/posts/canvas-sky</link>
+      <pubDate>Sun, 21 Sep 2025 03:40:00 GMT</pubDate>
+      <description>清晨、白天、黄昏、夜晚四套色板与一次插值过渡。</description>
+    </item>
+    <item>
+      <title>静态站点的后台可以有多小</title>
+      <link>https://example.com/posts/tiny-admin</link>
+      <pubDate>2025-08-30T12:00:00Z</pubDate>
+      <description>标准库够用了。</description>
+    </item>
+    <item>
+      <title>关于滚轮劫持的一次自我批判</title>
+      <link>https://example.com/posts/wheel</link>
+      <pubDate>Fri, 15 Aug 2025 07:00:00 GMT</pubDate>
+      <description>一次滑动一屏很爽，但要让减动效用户随时能退出。</description>
+    </item>
+  </channel>
+</rss>

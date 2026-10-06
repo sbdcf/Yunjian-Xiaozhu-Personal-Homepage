@@ -1,0 +1,50 @@
+/* admin.css · 后台样式：只做可用性，不做装饰 */
+* { box-sizing: border-box; }
+html { background: #fff; }
+body {
+  margin: 0;
+  padding: 0 0 80px;
+  background: #fff;
+  color: #000;
+  font: 14px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+.top { display: flex; align-items: baseline; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #000; }
+.top h1 { margin: 0; font-size: 18px; font-weight: 600; }
+.status { margin: 0; color: #555; }
+.status.err { color: #b00; }
+.status.ok { color: #060; }
+
+.login { padding: 20px; max-width: 560px; }
+.login label { display: block; margin: 12px 0; }
+.login input { width: 100%; }
+
+main { padding: 0 20px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 0; border-bottom: 1px solid #ccc; }
+.tabs a { color: #000; }
+
+section { padding: 18px 0; border-bottom: 1px solid #ccc; max-width: 900px; }
+section h2 { margin: 0 0 12px; font-size: 16px; }
+section h3 { margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
+
+label { display: block; margin: 8px 0; }
+label.inline { display: inline-block; margin-right: 16px; }
+input, select, textarea { font: inherit; padding: 3px 5px; border: 1px solid #888; background: #fff; color: #000; }
+input[type="text"], input[type="url"], input[type="number"], input[type="password"], textarea { width: 100%; max-width: 560px; }
+input[type="checkbox"] { width: auto; }
+button { font: inherit; padding: 4px 10px; border: 1px solid #000; background: #fff; cursor: pointer; }
+button:hover { background: #eee; }
+button.primary { background: #000; color: #fff; }
+button.primary:hover { background: #333; }
+button.remove { border-color: #b00; color: #b00; }
+
+.row { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+.row .row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }
+.hint { color: #555; }
+.actions { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center;
+           padding: 12px 20px; background: #fff; border-top: 1px solid #000; }
+.file-item { display: flex; gap: 10px; align-items: center; margin: 4px 0; }
+.thumb { width: 60px; height: 34px; object-fit: cover; border: 1px solid #ccc; }
+code { background: #f2f2f2; padding: 0 3px; }
+@media (max-width: 700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#070b14" />
+<title>云间小筑 · 首页</title>
+<meta name="description" content="个人主页兼站点导航：博客、项目、相册、关于与归档。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%239dc0ff'/%3E%3C/svg%3E" />
+
+<!-- 背景层需要 JS；无 JS 时提供一个可读的降级页面 -->
+<noscript>
+  <style>
+    .pages{position:static!important;height:auto!important;overflow:visible!important}
+    .page{min-height:auto!important;padding:6vh 6vw!important}
+    .bg-switch,.rail,.scroll-hint,.topbar{display:none!important}
+  </style>
+</noscript>
+
+<link rel="stylesheet" href="assets/css/main.css" />
+
+<!-- 内容配置：放在 head，便于首帧前就确定背景场景 -->
+<script src="assets/js/config.js"></script>
+<script>
+  /* 首帧即定场景：避免加载时先闪一下另一个主题的颜色，再慢慢过渡。
+     时间表与 config.js 的 background.schedule 保持同一份数据。 */
+  (function () {
+    var bg = (window.SITE_CONFIG || {}).background || {};
+    var q = new URLSearchParams(location.search).get('scene');
+    var key = null;
+    if (q && q !== 'auto' && ['dawn', 'day', 'dusk', 'night'].indexOf(q) >= 0) key = q;
+    if (!key && bg.mode === 'manual' && bg.manualScene) key = bg.manualScene;
+    if (!key) {
+      var d = new Date(), t = d.getHours() + d.getMinutes() / 60, table = bg.schedule || [];
+      key = 'night';
+      for (var i = 0; i < table.length; i++) {
+        var s = table[i];
+        if ((t >= s.from && t < s.to) || (s.to > 24 && t < s.to - 24)) { key = s.scene; break; }
+      }
+    }
+    document.documentElement.setAttribute('data-scene', key);
+    document.documentElement.setAttribute('data-theme', key === 'day' ? 'light' : 'dark');
+  })();
+</script>
+</head>
+<body>
+
+<!-- ===================== 背景层（时间感知） ===================== -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div id="bg-photo" class="bg-photo" aria-hidden="true"></div>
+<div class="bg-grain" aria-hidden="true"></div>
+<div class="bg-scrim" aria-hidden="true"></div>
+
+<!-- ===================== 顶栏：仅站名，滚动后淡入 ===================== -->
+<header class="topbar" id="topbar">
+  <a class="brand" href="#hero" aria-label="回到首页顶部">
+    <span class="brand-dot" aria-hidden="true"></span>
+    <span class="brand-name" data-site-name>云间小筑</span>
+  </a>
+</header>
+
+<!-- ===================== 主体分屏（屏数随配置变化） ===================== -->
+<main class="pages" id="pages">
+
+  <!-- 第一屏：个人信息 -->
+  <section class="page page--hero" id="hero" data-label="个人信息" aria-label="个人信息">
+    <div class="page-inner hero-inner">
+      <div class="avatar" id="avatar" aria-hidden="true"><span data-initials>YN</span></div>
+      <h1 class="hero-name" data-author-name>你的名字</h1>
+      <p class="hero-role" data-author-role>前端工程师 · 独立开发者</p>
+      <p class="hero-intro" data-author-intro hidden></p>
+
+      <p class="hero-status" id="heroStatus" hidden>
+        <span class="pulse" aria-hidden="true"></span><span data-author-status></span>
+      </p>
+
+      <ul class="social" id="social" aria-label="社交与订阅"></ul>
+    </div>
+    <div class="scroll-hint" id="scrollHint" aria-hidden="true">
+      <svg class="ico" viewBox="0 0 24 24"><use href="#i-down" /></svg>
+    </div>
+  </section>
+
+  <!-- 第二屏：导航 -->
+  <section class="page page--nav" id="nav-page" data-label="站点导航" aria-label="站点导航">
+    <div class="page-inner">
+      <h2 class="sect-label"><span>导航</span></h2>
+      <ul class="nav-grid" id="navGrid"></ul>
+    </div>
+  </section>
+
+  <!-- 时间轴屏：未配置 RSS 链接时整屏隐藏（app.js 决定） -->
+  <section class="page page--timeline" id="timeline" data-label="最近更新" aria-label="最近更新" hidden>
+    <div class="page-inner">
+      <h2 class="sect-label"><span>更新</span></h2>
+      <ol class="timeline" id="timelineList"></ol>
+    </div>
+  </section>
+
+  <!-- 末屏：底部信息（版权 / 次级链接 / 备案） -->
+  <section class="page page--info" id="info" data-label="站点信息" aria-label="站点信息">
+    <div class="page-inner">
+      <footer class="site-foot">
+        <div class="foot-grid">
+          <div class="foot-col">
+            <p class="foot-strong" data-copyright></p>
+          </div>
+          <div class="foot-col foot-col--center">
+            <ul class="foot-links" id="footLinks"></ul>
+          </div>
+          <div class="foot-col foot-col--end">
+            <p class="foot-line" id="icpLine" hidden>
+              <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shield" /></svg>
+              <a id="icpLink" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener nofollow"></a>
+            </p>
+            <p class="foot-line" id="policeLine" hidden>
+              <a id="policeLink" href="#" target="_blank" rel="noopener nofollow"></a>
+            </p>
+            <p class="foot-line">
+              <button class="to-top" id="toTop" type="button" aria-label="回到顶部">
+                <svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-up" /></svg>
+              </button>
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== 右侧分屏指示 ===================== -->
+<nav class="rail" id="rail" aria-label="分屏导航"></nav>
+
+<!-- ===================== 背景切换（自动 / 手动） ===================== -->
+<div class="bg-switch" id="bgSwitch" role="group" aria-label="背景切换"></div>
+
+<!-- ===================== 背景音乐播放器（无曲目时隐藏） ===================== -->
+<div class="music" id="music" hidden></div>
+
+<!-- ===================== 文字占比自检 HUD（按 B 键切换） ===================== -->
+<aside class="hud" id="hud" hidden aria-live="off"></aside>
+
+<!-- ===================== 图标精灵 ===================== -->
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <g id="i-pen"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></g>
+    <g id="i-cube"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5Z"/><path d="M3.3 7.5 12 12.5l8.7-5"/><path d="M12 22V12.5"/></g>
+    <g id="i-camera"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></g>
+    <g id="i-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>
+    <g id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g>
+    <g id="i-send"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4Z"/></g>
+    <g id="i-mail"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/></g>
+    <g id="i-rss"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/></g>
+    <g id="i-down"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></g>
+    <g id="i-up"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></g>
+    <g id="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>
+    <g id="i-sunrise"><path d="M12 3.5v5.5"/><path d="m9.5 6.5 2.5-2.5 2.5 2.5"/><path d="M4.5 18a7.5 7.5 0 0 1 15 0"/><path d="M2.5 18h19"/><path d="M4 21.5h16"/></g>
+    <g id="i-sunset"><path d="M12 9V3.5"/><path d="m9.5 6 2.5 2.5L14.5 6"/><path d="M4.5 18a7.5 7.5 0 0 1 15 0"/><path d="M2.5 18h19"/><path d="M4 21.5h16"/></g>
+    <g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></g>
+    <g id="i-auto"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M21 3.5V8h-4.5"/></g>
+    <g id="i-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></g>
+    <g id="i-link"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></g>
+    <g id="i-play"><path fill="currentColor" stroke="none" d="M8 5.5v13l11-6.5Z"/></g>
+    <g id="i-pause"><path fill="currentColor" stroke="none" d="M8 5h3v14H8zM13 5h3v14h-3z"/></g>
+    <g id="i-prev"><path fill="currentColor" stroke="none" d="M7 5h2.5v14H7z"/><path fill="currentColor" stroke="none" d="M19 5v14l-9-7Z"/></g>
+    <g id="i-next"><path fill="currentColor" stroke="none" d="M14.5 5H17v14h-2.5z"/><path fill="currentColor" stroke="none" d="M5 5v14l9-7Z"/></g>
+    <g id="i-music"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M9 18V5l12-2v13"/></g>
+    <g id="i-github"><path fill="currentColor" stroke="none" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></g>
+  </defs>
+</svg>
+
+<script src="assets/js/background.js"></script>
+<script src="assets/js/music.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

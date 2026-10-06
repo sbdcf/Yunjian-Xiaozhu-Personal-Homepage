@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>窄屏复核工具（iframe 提供真实 390px 视口）</title>
+<style>
+  html,body{margin:0;background:#0b0f18;font:12px/1.5 ui-monospace,Consolas,monospace;color:#cbd5e1}
+  .row{display:flex;gap:16px;padding:12px}
+  figure{margin:0}
+  figcaption{padding:4px 2px;color:#93a2b8}
+  iframe{width:390px;height:844px;border:0;border-radius:10px;display:block;background:#000}
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script>
+  /* 用法：_mobile.html                  → 三屏并排
+   *       _mobile.html?p=1&s=dusk        → 只渲染第 2 屏（黄昏） */
+  var q = new URLSearchParams(location.search);
+  var p = q.get('p'), s = q.get('s'), hud = q.get('hud') ? '&hud=1' : '';
+  var list = p !== null ? [{ p: p, s: s || 'day' }]
+    : [{ p: 0, s: 'day' }, { p: 1, s: 'dusk' }, { p: 2, s: 'night' }];
+  document.getElementById('row').innerHTML = list.map(function (it) {
+    return '<figure><figcaption>page=' + it.p + ' · ' + it.s + '</figcaption>'
+      + '<iframe src="../index.html?scene=' + it.s + '&page=' + it.p + hud + '"></iframe></figure>';
+  }).join('');
+</script>
+</body>
+</html>

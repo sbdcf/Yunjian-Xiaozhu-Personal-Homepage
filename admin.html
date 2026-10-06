@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>站点后台</title>
+<link rel="stylesheet" href="/assets/css/admin.css" />
+</head>
+<body>
+
+<header class="top">
+  <h1>站点后台</h1>
+  <p id="status" class="status"></p>
+</header>
+
+<section id="login" class="login">
+  <p>请输入后台密码。忘记密码可在服务器上执行：<code>python server.py --password 新密码</code></p>
+  <label>密码 <input type="password" id="password" autocomplete="current-password" /></label>
+  <button id="loginBtn" type="button">登录</button>
+</section>
+
+<main id="editor" hidden>
+  <nav class="tabs">
+    <a href="#sec-site">站点与个人信息</a>
+    <a href="#sec-social">社交链接</a>
+    <a href="#sec-nav">导航</a>
+    <a href="#sec-footer">底部信息</a>
+    <a href="#sec-bg">背景</a>
+    <a href="#sec-timeline">时间轴</a>
+    <a href="#sec-music">音乐</a>
+    <a href="#sec-files">上传文件</a>
+    <a href="#sec-account">账号</a>
+  </nav>
+
+  <section id="sec-site">
+    <h2>站点与个人信息</h2>
+    <div id="siteFields"></div>
+  </section>
+
+  <section id="sec-social">
+    <h2>社交链接</h2>
+    <div id="socialList"></div>
+    <button type="button" data-add="social">新增一条</button>
+  </section>
+
+  <section id="sec-nav">
+    <h2>导航</h2>
+    <p class="hint">图标名可选：pen / cube / camera / user / clock / send / mail / rss / github / link</p>
+    <div id="navList"></div>
+    <button type="button" data-add="nav">新增一项</button>
+  </section>
+
+  <section id="sec-footer">
+    <h2>底部信息</h2>
+    <div id="footerFields"></div>
+    <h3>次级链接</h3>
+    <div id="footLinks"></div>
+    <button type="button" data-add="footer.links">新增一条</button>
+    <p class="hint">备案号留空则首页不显示该行。</p>
+  </section>
+
+  <section id="sec-bg">
+    <h2>背景</h2>
+    <div id="bgFields"></div>
+    <h3>时间表</h3>
+    <p class="hint">小时按 24 小时制，区间含起始不含结束；跨夜可把结束写成 29（=次日 5 点）。</p>
+    <div id="scheduleList"></div>
+    <button type="button" data-add="background.schedule">新增区间</button>
+    <h3>图片背景</h3>
+    <p class="hint">按场景指定图片：填 URL 或上传。场景未配图片时使用程序化渐变天空；「主题」控制该场景下文字用亮色还是暗色。</p>
+    <div id="photoList"></div>
+    <button type="button" data-add="background.photos">新增图片</button>
+  </section>
+
+  <section id="sec-timeline">
+    <h2>时间轴</h2>
+    <p class="hint">填写 RSS / Atom 地址后首页才会出现时间轴屏；全部留空则整屏隐藏。</p>
+    <div id="feedList"></div>
+    <button type="button" data-add="timeline.feeds">新增订阅源</button>
+    <div id="timelineFields"></div>
+    <p>
+      <button type="button" id="previewBtn">抓取预览</button>
+      <span class="hint">使用已保存的配置抓取（未保存的改动不会生效），结果缓存 10 分钟。</span>
+    </p>
+    <div id="timelinePreview"></div>
+  </section>
+
+  <section id="sec-music">
+    <h2>背景音乐</h2>
+    <div id="musicFields"></div>
+    <h3>曲目</h3>
+    <p class="hint">
+      类型 file：手动上传音频文件 ｜ url：直接填音频地址 ｜ netease：填歌曲 ID（需自行部署
+      NeteaseCloudMusicApi 并填写上面的接口地址，服务端会代理取播放地址）。
+    </p>
+    <div id="trackList"></div>
+    <button type="button" data-add="music.tracks">新增曲目</button>
+  </section>
+
+  <section id="sec-files">
+    <h2>上传文件</h2>
+    <button type="button" id="refreshFiles">刷新列表</button>
+    <div id="fileList"></div>
+  </section>
+
+  <section id="sec-account">
+    <h2>账号</h2>
+    <div id="pwdFields"></div>
+    <button type="button" id="pwdBtn">修改密码</button>
+    <button type="button" id="logoutBtn">退出登录</button>
+  </section>
+
+  <div class="actions">
+    <button type="button" id="saveBtn" class="primary">保存</button>
+    <button type="button" id="reloadBtn">放弃改动并重新载入</button>
+    <a href="/" target="_blank" rel="noopener">打开首页 ↗</a>
+  </div>
+</main>
+
+<script src="/assets/js/admin.js"></script>
+</body>
+</html>

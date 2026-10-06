@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>后台联调登录（仅本机自测用）</title>
+<style>
+  body { font: 14px/1.6 system-ui, sans-serif; padding: 20px; }
+  pre { background: #f2f2f2; padding: 10px; }
+</style>
+</head>
+<body>
+<p>用法：<code>_login.html?p=你的后台密码</code> —— 用同源 fetch 登录一次，
+登录 Cookie 会留在浏览器 profile 里，之后可直接截图 /admin 的已登录界面。</p>
+<pre id="out">正在登录…</pre>
+<script>
+  var pwd = new URLSearchParams(location.search).get('p') || '';
+  fetch('/api/login', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pwd })
+  }).then(function (r) { return r.json(); }).then(function (data) {
+    document.getElementById('out').textContent = JSON.stringify(data)
+      + '\n\n已登录，可直接访问 /admin（同一浏览器 profile 内有效）。';
+  }).catch(function (err) {
+    document.getElementById('out').textContent = '登录请求失败：' + err.message;
+  });
+</script>
+</body>
+</html>
