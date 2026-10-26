@@ -9,6 +9,9 @@ admin.json
 audit.log
 *.tmp
 
+# 本地安全审计报告（只留在本机，不公开）
+*.local.md
+
 # 本地自测截图（约 25 MB，需要时本地重跑即可生成）
 preview/*.png
 preview/_login.png
