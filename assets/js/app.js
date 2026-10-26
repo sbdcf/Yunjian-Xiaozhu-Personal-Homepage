@@ -6,7 +6,6 @@
  * 3) 分屏滚动：滚轮一跳一屏 + 键盘 + 触屏原生滚动，右侧指示点
  * 4) 背景切换控件（自动 / 清晨 / 白天 / 黄昏 / 夜晚）
  * 5) 背景音乐播放器（music.js）
- * 6) 文字占比自检（B 键）：占用网格法统计文字覆盖面积，验证 < 50%
  * ============================================================= */
 (function () {
   'use strict';
@@ -293,9 +292,7 @@
           case ' ': if (onControl) return; self.next(e.shiftKey ? -1 : 1); break;
           case 'Home': self.goTo(0); break;
           case 'End': self.goTo(self.pages.length - 1); break;
-          default:
-            if ((e.key === 'b' || e.key === 'B') && C.debug && C.debug.textBudget) hud.toggle();
-            return;
+          default: return;
         }
         e.preventDefault();
       });
@@ -307,7 +304,7 @@
       if (b.snapWheel === false || REDUCE || COARSE) return;
       var self = this, threshold = b.wheelThreshold || 32;
       window.addEventListener('wheel', function (e) {
-        if (e.ctrlKey || (e.target.closest && e.target.closest('.hud'))) return;   // 让浏览器缩放/浮层正常工作
+        if (e.ctrlKey) return;   // 让浏览器缩放正常工作
         e.preventDefault();
         var now = performance.now();
         if (now < self.lock) return;
@@ -394,135 +391,10 @@
   };
 
   /* =============================================================
-   * 四、文字占比自检（占用网格法）
-   *   统计当前视口内"可见文字"覆盖的面积 ÷ 视口面积。
-   *   用网格去重，重叠文字不会被重复计算。
-   * ============================================================= */
-  var hud = {
-    el: null, visible: false, cell: 12,
-    minRatio: 0.5,
-
-    init: function () {
-      this.el = $('#hud');
-      if (!this.el) return;
-      if (C.debug && C.debug.showHud) this.toggle(true);
-      document.addEventListener('site:pagechange', function () { if (hud.visible) hud.update(); });
-      document.addEventListener('site:scenechange', function () { if (hud.visible) hud.update(); });
-      window.addEventListener('resize', function () { if (hud.visible) hud.update(); }, { passive: true });
-    },
-
-    toggle: function (force) {
-      if (!this.el) return;
-      this.visible = typeof force === 'boolean' ? force : !this.visible;
-      this.el.hidden = !this.visible;
-      if (this.visible) this.update();
-    },
-
-    /* 按分屏收集文字矩形（坐标相对各自那一屏，且裁掉屏外部分）
-     * 说明：只排除 display:none / visibility:hidden / aria-hidden 与浮层控件，
-     *       不排除"正在淡入"的元素——占比统计的是版面占用，与动画无关。 */
-    collect: function () {
-      var pages = pager.pages || [];
-      var boxes = pages.map(function (p) {
-        var r = p.getBoundingClientRect();
-        return { x: r.left, y: r.top, w: p.clientWidth || r.width, h: p.clientHeight || r.height, rects: [] };
-      });
-
-      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-        acceptNode: function (node) {
-          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-          var p = node.parentElement;
-          if (!p || !p.closest('.page')) return NodeFilter.FILTER_REJECT;      // 浮层控件不计入
-          if (p.closest('.hud, .sprite, .rail, .bg-switch')) return NodeFilter.FILTER_REJECT;
-          if (p.getAttribute('aria-hidden') === 'true') return NodeFilter.FILTER_REJECT;
-          var cs = getComputedStyle(p);
-          if (cs.display === 'none' || cs.visibility === 'hidden') return NodeFilter.FILTER_REJECT;
-          return NodeFilter.FILTER_ACCEPT;
-        }
-      });
-
-      var n;
-      while ((n = walker.nextNode())) {
-        var pageEl = n.parentElement.closest('.page');
-        var idx = pages.indexOf(pageEl);
-        if (idx < 0) continue;
-        var box = boxes[idx];
-        var range = document.createRange();
-        range.selectNodeContents(n);
-        var list = range.getClientRects();
-        for (var i = 0; i < list.length; i++) {
-          var r = list[i];
-          if (r.width < 1 || r.height < 1) continue;
-          var x0 = Math.max(r.left - box.x, 0), y0 = Math.max(r.top - box.y, 0);
-          var x1 = Math.min(r.right - box.x, box.w), y1 = Math.min(r.bottom - box.y, box.h);
-          if (x1 <= x0 || y1 <= y0) continue;
-          box.rects.push([x0, y0, x1, y1]);
-        }
-      }
-      return boxes;
-    },
-
-    /* 占用网格法：统计"被文字覆盖的面积"，重叠不会重复计算 */
-    ratioOf: function (box) {
-      var cols = Math.max(1, Math.ceil(box.w / this.cell));
-      var rows = Math.max(1, Math.ceil(box.h / this.cell));
-      var seen = new Uint8Array(cols * rows), count = 0;
-      for (var i = 0; i < box.rects.length; i++) {
-        var r = box.rects[i];
-        var c0 = Math.floor(r[0] / this.cell), c1 = Math.ceil(r[2] / this.cell);
-        var r0 = Math.floor(r[1] / this.cell), r1 = Math.ceil(r[3] / this.cell);
-        for (var y = r0; y < r1; y++) {
-          if (y < 0 || y >= rows) continue;
-          for (var x = c0; x < c1; x++) {
-            if (x < 0 || x >= cols) continue;
-            var k = y * cols + x;
-            if (!seen[k]) { seen[k] = 1; count++; }
-          }
-        }
-      }
-      return { ratio: count / (cols * rows), blocks: box.rects.length };
-    },
-
-    /* 三屏各自的文字占比 */
-    measure: function () {
-      var self = this;
-      return this.collect().map(function (box) { return self.ratioOf(box); });
-    },
-
-    update: function () {
-      if (!this.el) return;
-      var m = this.measure();
-      var i = clamp(pager.index || 0, 0, Math.max(m.length - 1, 0));
-      var cur = m[i] ? m[i].ratio * 100 : 0;
-      var worst = m.reduce(function (a, x) { return Math.max(a, x.ratio); }, 0) * 100;
-      var st = BG ? BG.getState() : { scene: 'night', mode: '-' };
-      var label = BG ? (BG.SCENES[st.scene] || {}).label : '';
-      var name = escapeHtml((pager.labels || [])[i] || '本屏');
-      var ok = worst < this.minRatio * 100;
-      var detail = m.map(function (x, k) {
-        return escapeHtml((pager.labels || [])[k] || k) + ' ' + (x.ratio * 100).toFixed(1) + '%';
-      }).join(' / ');
-
-      this.el.innerHTML =
-        '<span class="hud-key">背景</span>' + label + ' · ' + (st.mode === 'auto' ? '自动' : '手动')
-        + '<span class="hud-sep">|</span>'
-        + '<span class="hud-key">' + name + '文字占比</span>'
-        + '<b class="' + (ok ? 'is-ok' : 'is-bad') + '">' + cur.toFixed(1) + '%</b>'
-        + '<span class="hud-sep">|</span>上限 50%'
-        + '<span class="hud-sep">|</span>三屏 ' + detail
-        + '<span class="hud-sep">|</span>B 键关闭';
-      this.el.dataset.ratio = cur.toFixed(2);
-      this.el.dataset.ratios = m.map(function (x) { return (x.ratio * 100).toFixed(2); }).join(',');
-      this.el.dataset.blocks = m.map(function (x) { return x.blocks; }).join(',');
-      this.el.dataset.worst = worst.toFixed(2);
-    }
-  };
-
-  /* =============================================================
    * 启动
    * ============================================================= */
-  /* URL 参数（便于分享指定背景 / 联调自检）
-   * ?scene=dawn|day|dusk|night|auto  ?page=0|1|2  ?hud=1
+  /* URL 参数（便于分享指定背景 / 联调）
+   * ?scene=dawn|day|dusk|night|auto  ?page=0|1|2
    * 指定 scene 时直接落到该场景（不做过渡），方便分享与截图 */
   function applyQuery() {
     var q = new URLSearchParams(window.location.search);
@@ -534,7 +406,6 @@
     }
     var page = parseInt(q.get('page'), 10);
     if (!isNaN(page)) { pager.goTo(page, 'instant'); pager.sync(); }
-    if (q.get('hud') && C.debug && C.debug.textBudget) hud.toggle(true);
     if (q.get('diag')) diag();
   }
 
@@ -567,7 +438,6 @@
     if (BG) BG.init();
     pager.init();
     bgUI.init();
-    hud.init();
     if (window.SiteMusic) window.SiteMusic.init(C.music);
     root.classList.add('is-ready');         // 打开分屏过渡规则
     applyQuery();
@@ -586,9 +456,7 @@
 
   /* 供自动化测试/调试使用 */
   window.SiteHome = {
-    pager: pager, hud: hud, bgUI: bgUI, timeline: timeline,
-    config: function () { return C; },
-    /* 各分屏文字占比数组（0~1） */
-    textRatios: function () { return hud.measure().map(function (m) { return m.ratio; }); }
+    pager: pager, bgUI: bgUI, timeline: timeline,
+    config: function () { return C; }
   };
 })();

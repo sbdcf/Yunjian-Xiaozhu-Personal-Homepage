@@ -1,8 +1,8 @@
 /* =============================================================
  * main.css · 首页样式
  * 分区：1 变量与主题 / 2 背景层 / 3 骨架与分屏 / 4 首屏 / 5 导航
- *       6 底部信息 / 7 控件（指示点、背景切换、HUD）/ 8 响应式
- * 设计约束：极简；文字覆盖面积 < 视口 50%（实测约 8%~14%）
+ *       6 底部信息 / 7 控件（指示点、背景切换）/ 8 响应式
+ * 设计约束：极简；保持低文字密度
  * ============================================================= */
 
 /* ------------------------------------------------------------
@@ -430,7 +430,7 @@ body:not([data-section="0"]) .scroll-hint{opacity:0;transform:translate(-50%,12p
 .music-vol input{width:60px;accent-color:var(--accent)}
 
 /* ------------------------------------------------------------
- * 7. 控件：右侧指示点 / 背景切换 / 文字占比 HUD
+ * 7. 控件：右侧指示点 / 背景切换
  * ---------------------------------------------------------- */
 .rail{
   position:fixed;top:50%;right:clamp(12px,2.2vw,30px);z-index:30;
@@ -484,23 +484,6 @@ body:not([data-section="0"]) .scroll-hint{opacity:0;transform:translate(-50%,12p
 .bg-btn:hover{color:var(--fg);background:var(--glass-strong)}
 .bg-btn.is-active{background:var(--fg);color:var(--on-fg)}
 .bg-btn.is-active:hover{background:var(--fg);color:var(--on-fg);transform:scale(1.06)}
-
-.hud{
-  position:fixed;top:14px;right:14px;z-index:60;
-  max-width:min(46ch,calc(100vw - 28px));
-  padding:9px 13px;border-radius:12px;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:11.5px;line-height:1.7;letter-spacing:.02em;
-  color:#e9efff;background:rgba(6,10,20,.74);
-  border:1px solid rgba(255,255,255,.16);
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-}
-.hud[hidden]{display:none}
-.hud-key{color:rgba(233,239,255,.55);margin-right:4px}
-.hud-sep{margin:0 8px;color:rgba(233,239,255,.28)}
-.hud .is-ok{color:#7ee2a8}
-.hud .is-bad{color:#ff9a9a}
 
 /* ------------------------------------------------------------
  * 8. 响应式与极端尺寸

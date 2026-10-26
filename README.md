@@ -39,7 +39,7 @@
 
 给「个人主页 + 博客入口」这种形态的站点准备的一套首页方案，外加一个够用就好的后台。
 
-- **首页**：静态 HTML/CSS/JS，四屏分屏滚动，视觉极简，文字密度被刻意压到很低（实测各屏文字覆盖面积 0.4%~2.9%，见[设计文档](docs/DESIGN.md)）。
+- **首页**：静态 HTML/CSS/JS，四屏分屏滚动，视觉极简，文字密度被刻意压到很低。
 - **后台**：`server.py` 单文件，标准库实现。同时兼任站点托管、配置读写、文件上传、RSS 抓取代理和音乐地址代理。
 - **可分离**：不想用后台也没关系，删掉 `server.py` 就是一套纯静态站（图片背景与音乐直链仍可用，上传/时间轴/网易云不可用）。
 
@@ -54,7 +54,6 @@
 | RSS 时间轴 | 服务端抓 RSS/Atom 生成「最近更新」屏；**一个源都没填时整屏隐藏** |
 | 背景音乐 | 上传音频 / 音频直链 / 网易云歌曲 ID 三种来源混编播放列表，播放暂停、上下曲、音量记忆 |
 | 自适应主题 | 白天场景自动切亮色主题（深字浅玻璃），其余场景暗色，色板随场景一起过渡 |
-| 低文字密度自检 | 按 `B` 或 `?hud=1` 打开面板，实时显示各屏文字覆盖面积百分比 |
 | 该有的降级 | 无 JS → 变普通长页；无后端 → 用本地默认配置；`prefers-reduced-motion` → 取消动画与滚轮劫持 |
 | 该有的可访问性 | 语义标签、图标按钮带 `aria-label`、`:focus-visible` 描边、指示点带 `aria-current` |
 
@@ -163,7 +162,7 @@ python server.py --allow-local-netease  # 允许网易云 API 指向本机（默
 | --- | --- |
 | `site.default.json` | 默认值（开箱内容）。改这里等于改「新装默认」 |
 | `site.json` | 后台实际保存的差异，与默认值深合并后生效；首启动自动创建。**这是你的站点内容，建议一起提交进仓库**，换机器或重新部署才不会丢 |
-| `assets/js/config.js` | 离线默认配置：没有后端时页面用它；另外承载 `behavior`（滚轮阈值/锁定）与 `debug` 等行为参数 |
+| `assets/js/config.js` | 离线默认配置：没有后端时页面用它；另外承载 `behavior`（滚轮阈值/锁定）等行为参数 |
 | `admin.json` | 后台密码哈希（PBKDF2-SHA256）与会话密钥，首次运行生成，仅当前用户可读（Linux 600 / Windows 用 icacls 收紧），不可通过 HTTP 读取（**已在 .gitignore 中忽略**） |
 
 想改视觉与背景算法，看这两个地方：
@@ -172,7 +171,7 @@ python server.py --allow-local-netease  # 允许网易云 API 指向本机（默
 | --- | --- |
 | 四套场景的配色、日月位置、星尘、云带 | `assets/js/background.js` 顶部的 `SCENES` |
 | 亮色/暗色主题色板、圆角、版心留白 | `assets/css/main.css` 顶部的 `:root` 与 `html[data-theme="light"]` |
-| 滚轮灵敏度、翻屏锁定、自检开关 | `assets/js/config.js` 的 `behavior` / `debug` |
+| 滚轮灵敏度、翻屏锁定 | `assets/js/config.js` 的 `behavior` |
 
 ## 目录结构
 
@@ -187,9 +186,9 @@ assets/js/config.js        离线默认配置
 assets/js/first-frame.js   首帧定场景（外链，满足 CSP 禁止内联脚本）
 assets/js/background.js    背景引擎（场景插值 / 时间调度 / 图片背景）
 assets/js/music.js         背景音乐播放器
-assets/js/app.js           首页运行时（取配置 / 渲染 / 分屏滚动 / 文字占比自检）
+assets/js/app.js           首页运行时（取配置 / 渲染 / 分屏滚动）
 assets/js/admin.js         后台逻辑
-docs/DESIGN.md             设计说明与集成指南（原 README，含设计约束与实测数据）
+docs/DESIGN.md             设计说明与集成指南（原 README，含设计约束与集成说明）
 docs/img/                  README 用图
 preview/                   本地自测工具与截图（可整目录删除，截图不入库）
   ├ _api_test.py               接口自测：登录 / 上传 / RSS / Range / 越权 一次跑完
@@ -303,9 +302,6 @@ A：`python server.py --reset-password`（交互输入两遍，至少 12 位；�
 **Q：能只要静态部分吗？**
 A：能。删掉 `server.py`、`admin.html`、`assets/js/admin.js`、`assets/css/admin.css` 即可，首页会退回读 `assets/js/config.js`。
 
-**Q：首页文字占比怎么核？**
-A：打开页面按 `B`，或访问 `?hud=1`。算法是「文字实际覆盖面积 ÷ 视口面积」，12px 网格去重（详见[设计文档](docs/DESIGN.md)）。
-
 **Q：为什么只做 3~4 屏？**
 A：这是设计约束：屏数越少，每屏越干净。时间轴屏按需出现，正好是 3 屏与 4 屏两种形态。
 
@@ -336,15 +332,14 @@ HP_ADMIN_PASSWORD='你的密码' python server.py --reset-password
 | --- | --- |
 | `?scene=dawn\|day\|dusk\|night\|auto` | 直接落到某个背景场景（不做过渡） |
 | `?page=0..3` | 直接落到某一屏 |
-| `?hud=1` | 打开文字占比自检面板 |
 | `?diag=1` | 在页面上打印关键盒模型数值，排查布局 |
 
 窄屏复核：`preview/_mobile.html` 用 iframe 造出真实 390px 视口（有些无头浏览器会把窗口宽度钳到 492px，直接截窄屏会失真）。
 
 ## 设计文档
 
-[`docs/DESIGN.md`](docs/DESIGN.md) 是最初那份「设计说明与集成指南」，保留了完整的设计约束推导、逐条需求对照、
-文字占比实测数据、以及把首页接进现有站点的分步说明。要理解「为什么这样设计」，看它；要快速跑起来，看本文件。
+[`docs/DESIGN.md`](docs/DESIGN.md) 是最初那份「设计说明与集成指南」，保留了完整的设计约束推导、逐条需求对照，
+以及把首页接进现有站点的分步说明。要理解「为什么这样设计」，看它；要快速跑起来，看本文件。
 
 ## 许可证
 
