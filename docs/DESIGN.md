@@ -22,7 +22,7 @@
 python server.py                  # 默认 http://127.0.0.1:8787
 python server.py --port 9000      # 换端口
 python server.py --host 0.0.0.0   # 对外暴露（先看第七节安全提示）
-python server.py --password 新密码 # 忘记密码时重置
+python server.py --reset-password # 忘记密码时重置（交互输入，至少 12 位）
 ```
 
 首次启动会在控制台打印一个随机后台密码，然后：
@@ -179,26 +179,32 @@ preview/                   自测脚本与截图（整目录可删）
 | POST | `/api/login` `/api/logout` `/api/password` | 登录 / 退出 / 改密码 |
 | POST | `/api/upload` | 上传（JSON + base64；图片与音频白名单，单文件 ≤32 MB） |
 | GET | `/api/uploads` · DELETE `/api/upload?name=` | 列出 / 删除上传文件（需登录） |
-| GET | `/api/timeline[?refresh=1]` | 抓取并返回时间轴条目（缓存 10 分钟） |
+| GET | `/api/timeline[?refresh=1]` | 抓取并返回时间轴条目（缓存 10 分钟；`refresh=1` 需登录） |
 | GET | `/api/netease/song?id=` | 查歌曲信息（需登录） |
 | GET | `/api/music/stream?i=N` | 解析曲目播放地址并 302 |
 
 安全约定：
 
-- 默认只监听 `127.0.0.1`；要用 `--host 0.0.0.0` 对外，请务必先 `--password` 设一个强密码，并在前面加 HTTPS 反向代理。
-- 密码只存 `sha256(salt+password)`，登录态是 HMAC 签名、7 天有效的 HttpOnly Cookie；登录失败会延迟 0.4 秒，降低暴力尝试速度。
-- `admin.json`、`site.json`、`server.py` 与任何点文件都不可通过 HTTP 读取；静态服务做了目录穿越防护。
-- 上传按扩展名白名单 + 随机摘要重命名；音频/图片静态响应支持 `Range`（拖动进度条需要）。
-- 后台没有 CSRF token，但依赖 `SameSite=Lax` 的同源 Cookie；如果你要在公网暴露，建议再加一层反代鉴权。
+- 默认只监听 `127.0.0.1`；要用 `--host 0.0.0.0` 对外，先 `--reset-password` 设强密码（≥12 位），并放在 HTTPS 反代之后（反代没传 `X-Forwarded-Proto` 时加 `--secure-cookie`）。
+- 密码用 PBKDF2-SHA256（20 万次）加盐存储，旧版 SHA256 记录在登录成功后就地升级；登录态是 HMAC 签名、24 小时有效的 HttpOnly Cookie（HTTPS 下用 `__Host-` + Secure + SameSite=Strict）。
+- 连续 5 次密码错误后该 IP 锁定 10 分钟（429）；改密码或退出登录会递增 token 版本号，旧会话立即失效。
+- 全站下发 CSP（`script-src 'self'`）、`X-Content-Type-Options`、`X-Frame-Options: DENY`、`Referrer-Policy` 等安全头；不要再往 HTML 写内联 `<script>`。
+- RSS 与网易云地址抓取前做 SSRF 校验（只允许公网 http(s)，重定向逐跳复检）；网易云指向本机需 `--allow-local-netease`。
+- 静态托管只放行 `index.html`、`admin.html`、`assets/`、`uploads/`、`docs/img/`；源码、JSON、日志、点文件一律 404。
+- 上传按扩展名白名单 + 文件头魔数校验（不接受 SVG），重命名后存 `uploads/`，响应附沙箱 CSP；音频/图片支持 `Range`。
+- 后台依赖 `SameSite=Strict` 的同源 Cookie 防 CSRF；写配置会丢弃未知顶层键与 `__proto__` 等原型污染键。
+- 审计日志写 `audit.log`（登录/失败/锁定/改密/改配置/上传/删除），不含密码。
 
 ### 自测
 
 ```bash
-python server.py --password 你的密码       # 另开一个终端启动
-python preview/_api_test.py --password 你的密码
+python server.py --reset-password          # 另开一个终端启动
+curl -i http://127.0.0.1:8787/api/site
+curl -i -c cookie.txt -X POST http://127.0.0.1:8787/api/login \
+  -H 'Content-Type: application/json' -d '{"password":"你的密码"}'
+curl -i -b cookie.txt http://127.0.0.1:8787/api/site?full=1
+curl -i -b cookie.txt "http://127.0.0.1:8787/api/timeline?refresh=1"
 ```
-
-会依次跑：未登录拦截、登录、传图、传音频、类型白名单、Range、写配置、RSS 抓取与倒序、配置回读、上传列表、敏感文件不可访问。
 
 ---
 

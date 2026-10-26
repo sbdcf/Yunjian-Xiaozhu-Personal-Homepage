@@ -82,6 +82,16 @@
   function mixRgb(a, b, k) { return [mix(a[0], b[0], k), mix(a[1], b[1], k), mix(a[2], b[2], k)]; }
   function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
+  /* 图片地址只收站内路径与 http(s)，并排除会破坏 CSS url() 的字符 */
+  function safeImageUrl(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return '';
+    if (/["'()\\\s]/.test(raw)) return '';
+    if (raw.charAt(0) === '/' && raw.charAt(1) !== '/') return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return '';
+  }
+
   /* 稳定伪随机：保证星尘/云的位置在每次加载与场景切换中都不跳变 */
   function mulberry32(seed) {
     return function () {
@@ -340,7 +350,8 @@
     var item = null;
     for (var i = 0; i < photos.length; i++) if (photos[i].scene === key) item = photos[i];
     if (!item || item.url === photoUrl) return;
-    var url = item.url;
+    var url = safeImageUrl(item.url);
+    if (!url) return;
     var img = new Image();
     img.onload = function () {
       var first = !photoUrl;

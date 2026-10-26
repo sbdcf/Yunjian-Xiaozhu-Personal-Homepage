@@ -18,6 +18,14 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  /* 链接协议白名单：配置文件可能被别的工具改过，不能直接拼进 href */
+  function safeHref(href) {
+    var raw = String(href == null ? '' : href).trim();
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return '';
+    if (raw.charAt(0) === '/' && raw.charAt(1) !== '/') return raw;
+    if (/^(https?:\/\/|mailto:)/i.test(raw)) return raw;
+    return '';
+  }
   function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   function get(path) {
     return path.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, CFG);
@@ -91,7 +99,7 @@
     return '<label>' + esc(label)
       + '<input type="text" data-path="' + path + '" value="' + esc(val) + '" placeholder="图片/音频地址，或用下方按钮上传">'
       + '</label><p><button type="button" data-upload="' + path + '" data-accept="' + esc(accept || '') + '">上传文件</button>'
-      + (val ? ' <a href="' + esc(val) + '" target="_blank" rel="noopener">查看当前</a>' : '')
+      + (safeHref(val) ? ' <a href="' + esc(safeHref(val)) + '" target="_blank" rel="noopener noreferrer">查看当前</a>' : '')
       + '</p>';
   }
   function rowHead(index, path, title) {
@@ -232,7 +240,7 @@
   function renderAccount() {
     $('#pwdFields').innerHTML =
       '<label>原密码<input type="password" id="oldPwd"></label>'
-      + '<label>新密码（至少 6 位）<input type="password" id="newPwd"></label>';
+      + '<label>新密码（至少 12 位）<input type="password" id="newPwd" autocomplete="new-password" minlength="12"></label>';
   }
 
   function renderFiles() {
@@ -242,10 +250,13 @@
         ? '<p class="hint">删除前请先确认没有页面正在引用它。</p>'
         : '<p class="hint">还没有上传过文件。</p>')
         + files.map(function (f) {
-          var isImg = /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(f.name);
+          var isImg = /\.(png|jpe?g|webp|gif|avif)$/i.test(f.name);
+          var url = safeHref(f.url);
           return '<div class="file-item">'
-            + (isImg ? '<img class="thumb" src="' + esc(f.url) + '" alt="">' : '')
-            + '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.name) + '</a>'
+            + (isImg && url ? '<img class="thumb" src="' + esc(url) + '" alt="">' : '')
+            + (url
+              ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(f.name) + '</a>'
+              : '<span>' + esc(f.name) + '</span>')
             + '<span class="hint">' + Math.round(f.size / 1024) + ' KB</span>'
             + '<button type="button" class="remove" data-rmfile="' + esc(f.name) + '">删除</button>'
             + '</div>';
@@ -388,8 +399,11 @@
           var items = data.items || [];
           $('#timelinePreview').innerHTML = '<h3>抓取结果（' + items.length + ' 条）</h3>'
             + (items.length ? '<ol>' + items.map(function (it) {
+              var link = safeHref(it.link);
               return '<li>' + esc(it.date ? it.date.slice(0, 10) : '无日期') + ' ｜ ' + esc(it.source || '')
-                + ' ｜ <a href="' + esc(it.link) + '" target="_blank" rel="noopener">' + esc(it.title) + '</a></li>';
+                + ' ｜ ' + (link
+                  ? '<a href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">' + esc(it.title) + '</a>'
+                  : '<span>' + esc(it.title) + '</span>') + '</li>';
             }).join('') + '</ol>' : '<p class="hint">没有抓到条目。</p>')
             + ((data.errors && data.errors.length) ? '<p class="hint">错误：' + data.errors.map(esc).join('；') + '</p>' : '');
           status('抓取完成', 'ok');

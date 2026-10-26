@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Release](https://img.shields.io/badge/release-a0.0.2-orange)](https://github.com/sbdcf/Yunjian-Xiaozhu-Personal-Homepage/releases/tag/a0.0.2)
 [![Build](https://img.shields.io/badge/build-%E4%B8%8D%E9%9C%80%E8%A6%81-informational)](#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B)
 
 一个可以自己改内容的个人站点：**首页兼导航页**，下滑依次展开「个人信息 → 站点导航 → 最近更新 → 底部信息」；
@@ -119,7 +120,9 @@ python server.py            # 默认 http://127.0.0.1:8787
 ```bash
 python server.py --port 9000        # 换端口
 python server.py --host 0.0.0.0     # 对外暴露（先读「安全须知」）
-python server.py --password 新密码   # 忘记密码时重置
+python server.py --reset-password   # 忘记密码时交互式重置（不回显、不进命令历史）
+python server.py --secure-cookie    # 反代没传 X-Forwarded-Proto 时强制 Secure Cookie
+python server.py --allow-local-netease  # 允许网易云 API 指向本机（默认禁止，防 SSRF）
 ```
 
 ### 只想当纯静态站用
@@ -149,7 +152,7 @@ python server.py --password 新密码   # 忘记密码时重置
 - **留空即不显示**。ICP、公安备案、版权、一句话、状态、副标题、次级链接都是如此，页面上不会出现占位文字。
 - 时间轴：**一个源都不填，这一屏和对应的指示点一起消失**。
 - 图片背景：未配图的场景继续用程序化渐变天空；配了图的场景优先用图片，切换时交叉淡入。图片很暗或很亮时，用「主题」强制文字颜色。
-- 音乐：网易云类型需要你自己部署一份 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)，把地址（如 `http://127.0.0.1:3000`）填进「网易云 API 地址」。播放时浏览器请求 `/api/music/stream?i=N`，由服务端解析真实地址后 302 跳转。
+- 音乐：网易云类型需要你自己部署一份 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)，把地址（如 `http://127.0.0.1:3000`）填进「网易云 API 地址」。播放时浏览器请求 `/api/music/stream?i=N`，由服务端解析真实地址后 302 跳转。服务端默认只允许公网地址（防 SSRF），指向本机/内网时需在启动参数里加 `--allow-local-netease`。
 - 浏览器不允许无交互自动播放，所以「尝试自动播放」会先试一次，被拦下就等第一次点击或按键再开始。
 
 ## 配置说明
@@ -161,7 +164,7 @@ python server.py --password 新密码   # 忘记密码时重置
 | `site.default.json` | 默认值（开箱内容）。改这里等于改「新装默认」 |
 | `site.json` | 后台实际保存的差异，与默认值深合并后生效；首启动自动创建。**这是你的站点内容，建议一起提交进仓库**，换机器或重新部署才不会丢 |
 | `assets/js/config.js` | 离线默认配置：没有后端时页面用它；另外承载 `behavior`（滚轮阈值/锁定）与 `debug` 等行为参数 |
-| `admin.json` | 后台密码哈希与会话密钥，首次运行生成、600 权限、不可通过 HTTP 读取（**已在 .gitignore 中忽略**） |
+| `admin.json` | 后台密码哈希（PBKDF2-SHA256）与会话密钥，首次运行生成，仅当前用户可读（Linux 600 / Windows 用 icacls 收紧），不可通过 HTTP 读取（**已在 .gitignore 中忽略**） |
 
 想改视觉与背景算法，看这两个地方：
 
@@ -174,13 +177,14 @@ python server.py --password 新密码   # 忘记密码时重置
 ## 目录结构
 
 ```
-index.html                 首页（分屏骨架 + SVG 图标精灵 + 首帧定场景脚本）
+index.html                 首页（分屏骨架 + SVG 图标精灵；首帧脚本外链）
 admin.html                 后台页面
 server.py                  后台服务（静态托管 / 配置 / 上传 / RSS / 音乐代理）
 site.default.json          默认内容
 assets/css/main.css        首页样式
 assets/css/admin.css       后台样式
 assets/js/config.js        离线默认配置
+assets/js/first-frame.js   首帧定场景（外链，满足 CSP 禁止内联脚本）
 assets/js/background.js    背景引擎（场景插值 / 时间调度 / 图片背景）
 assets/js/music.js         背景音乐播放器
 assets/js/app.js           首页运行时（取配置 / 渲染 / 分屏滚动 / 文字占比自检）
@@ -195,23 +199,24 @@ preview/                   本地自测工具与截图（可整目录删除，�
 uploads/                   上传的图片与音频（后台写入；默认一起提交，体积大时可改为忽略）
 site.json                  你的站点内容（建议提交，别丢）
 admin.json                 后台密码哈希与会话密钥（已忽略，绝不提交）
+audit.log                  审计日志（登录/改密/改配置/上传；已忽略，不可通过 HTTP 读取）
 ```
 
 ## HTTP 接口
 
-除 `/api/site`、`/api/timeline` 外都需要登录 Cookie。
+除 `/api/site`（公开投影）与 `/api/timeline`（读取缓存）外都需要登录 Cookie。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/site` | 当前生效配置（默认值 + `site.json` 合并结果） |
-| GET | `/api/site?full=1` | 同上（后台用，需登录） |
-| PUT | `/api/site` | 保存配置（需登录） |
-| POST | `/api/login` · `/api/logout` · `/api/password` | 登录 / 退出 / 改密码 |
-| POST | `/api/upload` | 上传（JSON + base64，图片与音频白名单，单文件 ≤ 32 MB） |
+| GET | `/api/site` | 首页所需配置的公开投影（**不含** `timeline.feeds`、`music.neteaseApiBase`） |
+| GET | `/api/site?full=1` | 完整配置（后台用，需登录） |
+| PUT | `/api/site` | 保存配置（需登录；未知顶层键与原型污染键会被丢弃） |
+| POST | `/api/login` · `/api/logout` · `/api/password` | 登录 / 退出（吊销全部旧会话）/ 改密码（至少 12 位） |
+| POST | `/api/upload` | 上传（JSON + base64；图片与音频白名单 + 魔数校验，单文件 ≤ 32 MB） |
 | GET | `/api/uploads` · DELETE `/api/upload?name=` | 列出 / 删除上传文件（需登录） |
-| GET | `/api/timeline[?refresh=1]` | 抓取并返回时间轴条目（缓存 10 分钟） |
+| GET | `/api/timeline[?refresh=1]` | 抓取并返回时间轴条目（缓存 10 分钟；`refresh=1` 需登录） |
 | GET | `/api/netease/song?id=` | 查询歌曲信息（需登录） |
-| GET | `/api/music/stream?i=N` | 解析曲目播放地址并 302 |
+| GET | `/api/music/stream?i=N` | 解析曲目播放地址并 302（目标地址做协议与 CRLF 校验） |
 
 ## 部署
 
@@ -226,12 +231,20 @@ server {
 
     client_max_body_size 32m;          # 与后端上传上限保持一致
 
+    # 反代再兜一层基础安全头（应用自己也会发；CSP 以应用下发的为准）
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
     location / {
+        # 建议另在 http{} 里配 limit_req_zone 后对登录接口限速
         proxy_pass http://127.0.0.1:8787;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
     }
 }
 ```
@@ -248,6 +261,12 @@ WorkingDirectory=/srv/homepage
 ExecStart=/usr/bin/python3 /srv/homepage/server.py --host 127.0.0.1 --port 8787
 Restart=always
 User=www-data
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/homepage
 
 [Install]
 WantedBy=multi-user.target
@@ -255,11 +274,15 @@ WantedBy=multi-user.target
 
 ## 安全须知
 
-- 默认只监听 `127.0.0.1`，这是刻意的。要用 `--host 0.0.0.0` 对外，**先 `--password` 设一个强密码**，并放在 HTTPS 反代之后。
-- 密码只存 `sha256(salt + password)`；登录态是 HMAC 签名、7 天有效的 HttpOnly Cookie；登录失败会延迟 0.4 秒，降低暴力尝试速度。
-- 静态服务有目录穿越防护；`admin.json`、`site.json`、`server.py` 与任何点文件都不可通过 HTTP 读取。
-- 上传按扩展名白名单（图片/音频）并重命名；音频与图片的静态响应支持 `Range`（拖动进度条需要）。
-- 后台没有 CSRF token，依赖同源 `SameSite=Lax` Cookie；公网部署建议再加一层反代鉴权。
+- 默认只监听 `127.0.0.1`，这是刻意的。要用 `--host 0.0.0.0` 对外，先执行 `--reset-password` 设一个强密码，并放在 HTTPS 反代之后（反代没传 `X-Forwarded-Proto` 时加 `--secure-cookie`）。
+- 密码用 **PBKDF2-SHA256（20 万次迭代）** 存 `admin.json`；旧版本的单轮 SHA256 记录在首次登录成功后自动升级。新密码至少 12 位；同一 IP 10 分钟内失败 5 次即返回 429。
+- 登录态是 HMAC 签名、24 小时有效的 HttpOnly + `SameSite=Strict` Cookie；HTTPS 下自动改用 `__Host-` 前缀并加 `Secure`。改密码与退出登录都会立即吊销所有旧会话。
+- 全站下发 CSP（`script-src 'self'`）、`X-Content-Type-Options`、`X-Frame-Options: DENY`、`frame-ancestors 'none'`、`Referrer-Policy` 等安全头；因此首页脚本全部是外链文件（含 `assets/js/first-frame.js`），不要再往 HTML 里写内联 `<script>`。
+- 静态托管是**目录白名单**：只有 `index.html`、`admin.html`、`assets/`、`uploads/`、`docs/img/` 可访问；`server.py`、`site.json`、`make_speech_docx.py`、`checks.json`、`*.log`、`*.tmp` 与任何点文件一律 404。
+- 上传按扩展名白名单（图片/音频，**不接受 `.svg`**）并校验文件魔数，重命名后落盘；上传目录的响应额外带沙箱 CSP。
+- 服务端抓取 RSS / 网易云地址前会做 SSRF 校验：只允许公网 http(s)，且每一跳重定向都重新校验；网易云 API 指向本机需显式加 `--allow-local-netease`。
+- 后台依赖同源 `SameSite=Strict` Cookie 防 CSRF；公网部署仍建议在反代再加一层访问控制。
+- 审计日志写在 `audit.log`（登录成功/失败、改密、改配置、上传/删除），不含密码；该文件已不可通过 HTTP 读取，并已加入 `.gitignore`。
 - `admin.json` 含密码哈希与会话密钥，**不要提交**（`.gitignore` 已忽略）；`site.json` 只是站点内容，可以放心提交。
 - 部署后建议备份 `site.json` 与 `uploads/`，两者就是站点的全部内容。
 
@@ -275,7 +298,7 @@ A：三件事：① 有没有部署 NeteaseCloudMusicApi 并填地址；② 这�
 A：浏览器策略，必须有用户交互。开启自动播放后，页面会在你第一次点击或按键时开始。
 
 **Q：忘了后台密码？**
-A：`python server.py --password 新密码`。
+A：`python server.py --reset-password`（交互输入两遍，至少 12 位；自动化场景可设 `HP_ADMIN_PASSWORD` 环境变量）。
 
 **Q：能只要静态部分吗？**
 A：能。删掉 `server.py`、`admin.html`、`assets/js/admin.js`、`assets/css/admin.css` 即可，首页会退回读 `assets/js/config.js`。
@@ -288,14 +311,24 @@ A：这是设计约束：屏数越少，每屏越干净。时间轴屏按需出�
 
 ## 开发与自测
 
-改完之后可以跑一遍接口自测（需要先启动服务）：
+改完之后可以启动服务，用几条 curl 验证关键行为（接口自测脚本随 `preview/` 目录移除，不再附带）：
 
 ```bash
-python server.py --password 你的密码       # 一个终端
-python preview/_api_test.py --password 你的密码   # 另一个终端
+python server.py --reset-password                 # 一个终端（交互输入密码）
+curl -i http://127.0.0.1:8787/api/site            # 公开投影：不含 feeds / neteaseApiBase
+curl -i -c cookie.txt -X POST http://127.0.0.1:8787/api/login \
+  -H 'Content-Type: application/json' -d '{"password":"你的密码"}'
+curl -i -b cookie.txt http://127.0.0.1:8787/api/site?full=1
+curl -i -b cookie.txt "http://127.0.0.1:8787/api/timeline?refresh=1"
 ```
 
-会依次验证：未登录拦截、登录、错误密码、上传图片、上传音频、扩展名白名单、`Range` 请求、写配置、RSS 抓取与倒序、配置回读、上传列表、敏感文件不可访问。
+重点看：安全响应头是否齐全、未登录时 `full=1` / `refresh=1` 是否 401、登录 Cookie 是否带 `HttpOnly` 与 `SameSite=Strict`。
+
+自动化/无交互环境不要用命令行传密码，改为：
+
+```bash
+HP_ADMIN_PASSWORD='你的密码' python server.py --reset-password
+```
 
 首页支持几个联调用的 URL 参数：
 

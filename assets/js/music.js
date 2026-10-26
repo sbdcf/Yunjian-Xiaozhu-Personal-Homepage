@@ -39,6 +39,7 @@
 
       var volume = typeof saved.volume === 'number' ? saved.volume
         : (typeof cfg.volume === 'number' ? cfg.volume : 0.5);
+      volume = Math.min(1, Math.max(0, isFinite(volume) ? volume : 0.5));   // 配置/本地存储都当不可信
 
       this.box.innerHTML =
         '<audio id="musicAudio" preload="none"></audio>'
@@ -79,7 +80,12 @@
       if ((track.type || '').toLowerCase() === 'netease') {
         return '/api/music/stream?i=' + this.index;      // 服务端解析后 302
       }
-      return track.src || '';
+      /* 直链同样只收 http(s) 与站内路径，防止配置里混进 javascript:/data: */
+      var src = String(track.src || '').trim();
+      if (!src || /[\u0000-\u001f\u007f]/.test(src)) return '';
+      if (src.charAt(0) === '/' && src.charAt(1) !== '/') return src;
+      if (/^https?:\/\//i.test(src)) return src;
+      return '';
     },
 
     load: function (autoplay) {

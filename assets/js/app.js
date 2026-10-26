@@ -22,7 +22,12 @@
   function $(sel, ctx) { return (ctx || document).querySelector(sel); }
   function $all(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
   function icon(name, cls) {
-    return '<svg class="ico ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-' + name + '"></use></svg>';
+    /* 图标名来自配置，必须白名单化，否则可闭合 class / href 属性 */
+    var safe = /^[a-z0-9-]{1,32}$/i.test(String(name || '')) ? name : 'link';
+    var extra = String(cls || '').split(/\s+/).filter(function (c) {
+      return /^[a-z0-9_-]{1,32}$/i.test(c);
+    }).join(' ');
+    return '<svg class="ico ' + extra + '" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-' + safe + '"></use></svg>';
   }
   function text(node, value) { if (node && value != null && value !== '') node.textContent = value; }
   function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
@@ -32,6 +37,20 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  /* 链接白名单：仅 http(s)、mailto 与站内路径；拒绝 javascript:/data:/vbscript: */
+  function safeHref(href) {
+    var raw = String(href == null ? '' : href).trim();
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return '';
+    if (raw.charAt(0) === '/' && raw.charAt(1) !== '/') return raw;
+    if (/^(https?:\/\/|mailto:)/i.test(raw)) return raw;
+    return '';
+  }
+  /* 图片地址：还要排除会破坏 CSS url() 的字符 */
+  function safeImageUrl(url) {
+    var raw = safeHref(url);
+    if (!raw || /^mailto:/i.test(raw) || /["'()\\\s]/.test(raw)) return '';
+    return raw;
+  }
   /* 深合并：后台配置覆盖默认值（数组与标量整体替换） */
   function merge(base, over) {
     if (base && over && typeof base === 'object' && typeof over === 'object'
@@ -39,6 +58,8 @@
       var out = {};
       Object.keys(base).forEach(function (k) { out[k] = base[k]; });
       Object.keys(over).forEach(function (k) {
+        /* 防原型污染：来自 /api/site 的键一律不可信 */
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
         out[k] = (k in base) ? merge(base[k], over[k]) : over[k];
       });
       return out;
@@ -87,9 +108,10 @@
       }
 
       var avatar = $('#avatar');
-      if (avatar && a.avatar) {
+      var avatarUrl = a.avatar ? safeImageUrl(a.avatar) : '';
+      if (avatar && avatarUrl) {
         avatar.classList.add('has-img');
-        avatar.style.backgroundImage = 'url("' + a.avatar + '")';
+        avatar.style.backgroundImage = 'url("' + avatarUrl + '")';
         var span = $('[data-initials]', avatar);
         if (span) span.style.visibility = 'hidden';
       }
@@ -97,10 +119,13 @@
       /* 社交图标按钮 */
       var social = $('#social');
       if (social) {
-        var links = (C.social || []).filter(function (s) { return s && s.href; });
+        var links = (C.social || []).filter(function (s) { return s && safeHref(s.href); });
         social.innerHTML = links.map(function (s) {
-          return '<li><a class="social-btn" href="' + s.href + '" title="' + s.label + '" aria-label="' + s.label + '"'
-            + (/^https?:/.test(s.href) ? ' target="_blank" rel="noopener"' : '') + '>' + icon(s.icon || 'link') + '</a></li>';
+          var href = safeHref(s.href);
+          var label = String(s.label || '');
+          var blank = /^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
+          return '<li><a class="social-btn" href="' + escapeHtml(href) + '" title="' + escapeHtml(label)
+            + '" aria-label="' + escapeHtml(label) + '"' + blank + '>' + icon(s.icon || 'link') + '</a></li>';
         }).join('');
         social.hidden = !links.length;
       }
@@ -108,11 +133,11 @@
       /* 导航磁贴 */
       var grid = $('#navGrid');
       if (grid) {
-        grid.innerHTML = (C.nav || []).filter(function (n) { return n && n.href; }).map(function (n) {
-          return '<li class="nav-item"><a class="nav-tile" href="' + n.href + '">'
+        grid.innerHTML = (C.nav || []).filter(function (n) { return n && safeHref(n.href); }).map(function (n) {
+          return '<li class="nav-item"><a class="nav-tile" href="' + escapeHtml(safeHref(n.href)) + '">'
             + '<span class="tile-ico">' + icon(n.icon || 'link') + '</span>'
-            + '<span class="tile-label">' + n.label + '</span>'
-            + (n.caption ? '<span class="tile-caption">' + n.caption + '</span>' : '')
+            + '<span class="tile-label">' + escapeHtml(n.label || '') + '</span>'
+            + (n.caption ? '<span class="tile-caption">' + escapeHtml(n.caption) + '</span>' : '')
             + '</a></li>';
         }).join('');
       }
@@ -124,9 +149,10 @@
       }
       var fl = $('#footLinks');
       if (fl) {
-        var flinks = (f.links || []).filter(function (l) { return l && l.href; });
+        var flinks = (f.links || []).filter(function (l) { return l && safeHref(l.href); });
         fl.innerHTML = flinks.map(function (l) {
-          return '<li><a class="foot-link" href="' + l.href + '">' + icon('link', 'ico-xs') + '<span>' + l.label + '</span></a></li>';
+          return '<li><a class="foot-link" href="' + escapeHtml(safeHref(l.href)) + '">' + icon('link', 'ico-xs')
+            + '<span>' + escapeHtml(l.label || '') + '</span></a></li>';
         }).join('');
       }
       var icpLine = $('#icpLine');
@@ -134,7 +160,7 @@
         if (f.icp && f.icp.text) {
           var icp = $('#icpLink');
           icp.textContent = f.icp.text;
-          icp.href = f.icp.href || 'https://beian.miit.gov.cn/';
+          icp.href = safeHref(f.icp.href) || 'https://beian.miit.gov.cn/';
           icpLine.hidden = false;
         } else {
           icpLine.hidden = true;
@@ -145,7 +171,7 @@
         if (f.police && f.police.text) {
           var pl = $('#policeLink');
           pl.textContent = f.police.text;
-          pl.href = f.police.href || '#';
+          pl.href = safeHref(f.police.href) || '#';
           pline.hidden = false;
         } else {
           pline.hidden = true;
@@ -179,13 +205,13 @@
       this.data = data;
       listEl.innerHTML = data.items.map(function (it) {
         var date = (it.date || '').slice(0, 10);
-        var href = it.link || '#';
-        var inner = '<span class="tl-date">' + (date || '—') + '</span>'
+        var href = safeHref(it.link);
+        var inner = '<span class="tl-date">' + escapeHtml(date || '—') + '</span>'
           + '<span class="tl-title">' + escapeHtml(it.title || '') + '</span>'
           + (it.source ? '<span class="tl-src">' + escapeHtml(it.source) + '</span>' : '');
         return '<li class="tl-item">'
-          + (/^https?:/.test(href)
-            ? '<a class="tl-link" href="' + href + '" target="_blank" rel="noopener">' + inner + '</a>'
+          + (/^https?:/i.test(href)
+            ? '<a class="tl-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>'
             : '<span class="tl-link">' + inner + '</span>')
           + '</li>';
       }).join('');
@@ -213,8 +239,9 @@
       /* 右侧指示点 */
       if (this.rail) {
         this.rail.innerHTML = this.pages.map(function (p, i) {
-          return '<button class="rail-dot" type="button" data-i="' + i + '" data-label="' + self.labels[i]
-            + '" aria-label="' + self.labels[i] + '"><span class="rail-fill"></span></button>';
+          var label = escapeHtml(self.labels[i]);
+          return '<button class="rail-dot" type="button" data-i="' + i + '" data-label="' + label
+            + '" aria-label="' + label + '"><span class="rail-fill"></span></button>';
         }).join('');
         this.rail.addEventListener('click', function (e) {
           var b = e.target.closest('.rail-dot');
@@ -470,10 +497,10 @@
       var worst = m.reduce(function (a, x) { return Math.max(a, x.ratio); }, 0) * 100;
       var st = BG ? BG.getState() : { scene: 'night', mode: '-' };
       var label = BG ? (BG.SCENES[st.scene] || {}).label : '';
-      var name = (pager.labels || [])[i] || '本屏';
+      var name = escapeHtml((pager.labels || [])[i] || '本屏');
       var ok = worst < this.minRatio * 100;
       var detail = m.map(function (x, k) {
-        return ((pager.labels || [])[k] || k) + ' ' + (x.ratio * 100).toFixed(1) + '%';
+        return escapeHtml((pager.labels || [])[k] || k) + ' ' + (x.ratio * 100).toFixed(1) + '%';
       }).join(' / ');
 
       this.el.innerHTML =
